@@ -1,5 +1,28 @@
 # NAS Application - Design System
 
+## Project Structure Protocol
+
+**CRITICAL FILE ORGANIZATION RULE**: All user-generated content (documentation, examples, screenshots, analysis files, or any files not required by the codebase to run) MUST be placed in the `user-content/` folder.
+
+**Place in `user-content/` folder:**
+- ✅ Documentation files (.md, .txt) - except README.md
+- ✅ Example files (HTML examples, prototypes)
+- ✅ Screenshots and images (.png, .jpg, etc.)
+- ✅ Analysis or specification documents
+- ✅ CLI tools or scripts not used by the main app
+- ✅ Template files not used by the runtime
+
+**Keep in codebase root (system required):**
+- ⚠️ README.md (project documentation)
+- ⚠️ package.json, yarn.lock (dependencies)
+- ⚠️ Configuration files (.env.example, nuxt.config.js, etc.)
+- ⚠️ Dockerfile, .dockerignore (deployment)
+- ⚠️ .gitignore (version control)
+
+**Note**: The `user-content/` folder is gitignored and will not be committed to the repository.
+
+---
+
 ## Purpose & Success Criteria
 
 Single source of truth for building consistent, space-efficient interfaces. Anyone can construct any page from requirements with identical look and feel.
