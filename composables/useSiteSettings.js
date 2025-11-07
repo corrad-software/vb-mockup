@@ -46,6 +46,9 @@ export const useSiteSettings = () => {
       }
     } catch (error) {
       console.error("Error loading site settings:", error);
+      // Fallback: Apply default theme if API fails (for frontend mockup)
+      applyThemeSettings();
+      updateGlobalMeta();
     } finally {
       loading.value = false;
     }
