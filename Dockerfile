@@ -13,8 +13,12 @@ RUN yarn install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Generate Prisma Client (required even for dev mode)
-RUN npx prisma generate
+# Set database URL for SQLite (local file for vibecode prototype)
+ENV DATABASE_URL="file:./dev.db"
+
+# Generate Prisma Client and create database
+RUN npx prisma generate && \
+    npx prisma db push --accept-data-loss
 
 # Expose port (Coolify default)
 EXPOSE 3000
