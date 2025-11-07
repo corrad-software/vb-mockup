@@ -1,6 +1,9 @@
 # Development mode for Coolify vibecoding
 FROM node:24-alpine
 
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
 # Set working directory
 WORKDIR /app
 
@@ -16,9 +19,8 @@ COPY . .
 # Set database URL for SQLite (local file for vibecode prototype)
 ENV DATABASE_URL="file:./dev.db"
 
-# Generate Prisma Client and create database
-RUN npx prisma generate && \
-    npx prisma db push --accept-data-loss
+# Generate Prisma Client only (skip db push to avoid build issues)
+RUN npx prisma generate
 
 # Expose port (Coolify default)
 EXPOSE 3000
