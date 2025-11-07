@@ -13,6 +13,9 @@ RUN yarn install --frozen-lockfile
 # Copy source code
 COPY . .
 
+# Generate Prisma Client (required even for dev mode)
+RUN npx prisma generate
+
 # Expose port (Coolify default)
 EXPOSE 3000
 
