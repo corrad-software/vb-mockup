@@ -19,8 +19,8 @@ COPY . .
 # Set database URL for SQLite (local file for vibecode prototype)
 ENV DATABASE_URL="file:./dev.db"
 
-# Generate Prisma Client only (skip db push to avoid build issues)
-RUN npx prisma generate
+# Prepare Nuxt and generate Prisma Client
+RUN npx nuxt prepare && npx prisma generate
 
 # Expose port (Coolify default)
 EXPOSE 3000
