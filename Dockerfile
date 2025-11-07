@@ -16,11 +16,8 @@ RUN yarn install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Set database URL for SQLite (local file for vibecode prototype)
-ENV DATABASE_URL="file:./dev.db"
-
-# Prepare Nuxt and generate Prisma Client
-RUN npx nuxt prepare && npx prisma generate
+# Prepare Nuxt (skip Prisma since we're using mock)
+RUN npx nuxt prepare
 
 # Expose port (Coolify default)
 EXPOSE 3000
