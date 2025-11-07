@@ -1,0 +1,23 @@
+/* RS Card Component */
+.card {
+  @apply mb-4 rounded-lg;
+  background-color: rgb(var(--bg-2));
+  box-shadow: var(--box-shadow);
+}
+
+.card .card-header {
+  @apply text-lg px-3 py-3 font-medium;
+  line-height: 1.5;
+  border-bottom: 1px solid rgb(var(--border-color));
+}
+
+.card .card-body {
+  @apply px-3 py-3;
+  line-height: 1.6;
+}
+
+.card .card-footer {
+  @apply px-3 py-3;
+  line-height: 1.5;
+  border-top: 1px solid rgb(var(--border-color));
+}

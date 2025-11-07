@@ -1,0 +1,60 @@
+# Nuxt dev/build outputs
+.output
+.nuxt
+.nitro
+.cache
+dist
+
+# Node dependencies
+node_modules
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# OS
+.DS_Store
+.fleet
+.idea
+
+# Vim
+*.swp
+*.swo
+
+# Environment variables - SENSITIVE (set in Coolify)
+.env
+.env.local
+.env.*.local
+
+# Local development only
+*.local
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# IDE - JetBrains
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Testing
+coverage
+*.lcov
+.nyc_output
+
+# Misc
+*.tsbuildinfo
+.temp
+.tmp
+.vercel
+.netlify

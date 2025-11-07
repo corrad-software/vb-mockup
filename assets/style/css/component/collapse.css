@@ -1,0 +1,61 @@
+/* RS Collapse Component */
+.accordion {
+  @apply w-full mb-3 visible;
+  background-color: rgb(var(--bg-2));
+}
+
+.accordion.accordion-border {
+  @apply border-t border-x rounded-md;
+  border-color: rgb(var(--border-color));
+}
+
+.accordion .accordion-group {
+  @apply overflow-hidden duration-300 dark:border-slate-700;
+  background-color: rgb(var(--bg-2));
+}
+
+.accordion .accordion-group.accordion-default {
+  @apply border-b;
+  border-color: rgb(var(--border-color));
+}
+
+.accordion .accordion-group.accordion-border {
+  @apply border-b last:rounded-b-md;
+  border-color: rgb(var(--border-color));
+}
+
+.accordion .accordion-group.accordion-card {
+  @apply my-2;
+  box-shadow: var(--box-shadow);
+}
+
+.accordion .accordion-group .accordion-header {
+  @apply text-base font-medium px-3 pr-8 py-2 cursor-pointer;
+}
+
+.accordion .accordion-group .accordion-body {
+  @apply px-3 pb-3 pt-1.5;
+}
+
+.accordion-group .accordion-header {
+  position: relative;
+}
+
+.accordion-group .accordion-header::after {
+  content: "";
+  position: absolute;
+  width: 19px;
+  height: 19px;
+  top: 50%;
+  right: 0%;
+  transform: translate(-100%, -50%) rotate(0deg);
+  background: url("/assets/img/icon/chevron-right.svg");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transition: 0.25s ease-in-out;
+}
+
+.accordion-group--open .accordion-header::after {
+  transform: translate(-100%, -50%) rotate(90deg);
+}

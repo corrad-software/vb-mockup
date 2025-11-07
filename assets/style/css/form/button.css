@@ -1,0 +1,7 @@
+.formkit-wrapper-button {
+  @apply mb-1;
+}
+
+.formkit-input-button {
+  @apply bg-primary hover:bg-primary/90 text-white text-sm font-normal py-1.5 px-3 rounded-md;
+}

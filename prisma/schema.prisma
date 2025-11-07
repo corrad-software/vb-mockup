@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model lookup {
+  lookup_id          Int     @id
+  lookup_category    String? 
+  lookup_kod         String? 
+  lookup_description String? 
+  ref_category       String? 
+  ref_kod            String? 
+}
+
+model role {
+  roleID           Int        @id @default(autoincrement())
+  roleName         String?    
+  roleDescription  String?    
+  roleStatus       String?    
+  roleCreatedDate  DateTime?  
+  roleModifiedDate DateTime?  
+  userrole         userrole[]
+}
+
+model user {
+  userID           Int        @id @default(autoincrement())
+  userSecretKey    String?    
+  userUsername     String?    
+  userPassword     String?    
+  userFullName     String?    
+  userEmail        String?    
+  userPhone        String?    
+  userStatus       String?    
+  userCreatedDate  DateTime?  
+  userModifiedDate DateTime?  
+  userrole         userrole[]
+}
+
+model userrole {
+  userRoleID          Int      @id @default(autoincrement())
+  userRoleUserID      Int      @default(0)
+  userRoleRoleID      Int      @default(0)
+  userRoleCreatedDate DateTime 
+  role                role     @relation(fields: [userRoleRoleID], references: [roleID], onDelete: NoAction, onUpdate: NoAction)
+  user                user     @relation(fields: [userRoleUserID], references: [userID], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([userRoleRoleID])
+  @@index([userRoleUserID])
+}
+
+model site_settings {
+  settingID            Int       @id @default(autoincrement())
+  siteName             String?   
+  siteNameFontSize     Int?      @default(18)
+  siteDescription      String?   
+  siteLogo             String?   
+  siteLoadingLogo      String?   
+  siteFavicon          String?   
+  showSiteNameInHeader Boolean?  @default(true)
+  primaryColor         String?   
+  secondaryColor       String?   
+  successColor         String?   
+  infoColor            String?   
+  warningColor         String?   
+  dangerColor          String?   
+  customCSS            String?   
+  themeMode            String?   
+  customThemeFile      String?   
+  currentFont          String?   
+  fontSource           String?   
+  seoTitle             String?   
+  seoDescription       String?   
+  seoKeywords          String?   
+  seoAuthor            String?   
+  seoOgImage           String?   
+  seoTwitterCard       String?   @default("summary_large_image") 
+  seoCanonicalUrl      String?   
+  seoRobots            String?   @default("index, follow") 
+  seoGoogleAnalytics   String?   
+  seoGoogleTagManager  String?   
+  seoFacebookPixel     String?   
+  settingCreatedDate   DateTime? 
+  settingModifiedDate  DateTime? 
+  siteLoginLogo        String?   
+}
+
+model BP_access {
+  id         Int       @id @default(autoincrement())
+  username   String    @unique 
+  password   String    
+  isActive   Boolean?  @default(true)
+  created_at DateTime? @default(now()) 
+  updated_at DateTime? @default(now()) 
+
+  @@index([isActive])
+  @@index([username])
+}
+
+model k_asnaf_profiling {
+  id_asnaf_profiling                 Int                 @id @default(autoincrement())
+  asnaf_uuid                         String              @unique 
+  nama_asnaf                         String?             
+  no_kad_pengenalan                  String?             
+  alamat                             String?             
+  status                             Int?                @default(1) 
+  created_date                       DateTime?           @default(now()) 
+  updated_date                       DateTime?           @default(now()) 
+  masih_bersekolah                   Boolean?
+  pendidikan_tertinggi               String?             
+  lain_lain_pendidikan_tertinggi     String?             
+  tahap_pendidikan_dicapai           String?
+  alamat_1                           String?             
+  alamat_2                           String?             
+  nama_bank                          String?             
+  no_acc_bank                        String?             
+  swift_code                         String?             
+  nama_acc                           String?             
+  kaedah_bayar                       Int?
+  daerah                             String?             
+  kariah                             String?             
+  geolokasi                          String?             
+  tarikh_kfam                        DateTime?           
+  nama_kursus                        String?             
+  nama_pengajar                      String?             
+  tempat_kfam                        String?             
+  senarai_kemahiran                  String?             
+  lain_lain_kemahiran                String?             
+  dokumen_sokongan                   String?             
+  tahap_kesihatan                    String?             
+  keadaan_kesihatan_kronik           String?             
+  kos_penjagaan_kronik               String?             
+  jumlah_perbelanjaan_bulanan_kronik String?             
+  kesempurnaan_fizikal               String?             
+  sebab_kecacatan                    String?             
+  tahap_kecacatan                    String?             
+  jumlah_perbelanjaan_bulanan_oku    String?             
+  keadaan_kesihatan_uzur             String?             
+  kos_penjagaan_uzur                 String?             
+  jumlah_perbelanjaan_bulanan_uzur   String?             
+  k_asnaf_documents                  k_asnaf_documents[]
+}
+
+model k_profiling_component {
+  id_profiling_component Int       @id @default(autoincrement())
+  nama_pendaftaran       String?   
+  kod_komponen           String?   
+  description            String?   
+  kod_proses             String?
+  id_menu                Int?
+  status                 String?   
+  status_data            String?   
+  start_date             DateTime? 
+  end_date               DateTime? 
+  created_date           DateTime? @default(now()) 
+  created_by             String?   
+  updated_date           DateTime? @default(now()) 
+  updated_by             String?   
+}
+
+model k_profiling_kategori {
+  id_profiling_kategori Int       @id @default(autoincrement())
+  kod_kategori          String?   @unique 
+  nama_kategori         String?   
+  keterangan            String?   
+  status                Int?
+  created_date          DateTime? 
+  updated_date          DateTime? 
+}
+
+model k_profiling_proses {
+  id_profiling_proses Int       @id @default(autoincrement())
+  kod_proses          String    @unique 
+  nama_kategori       String    
+  kod_kategori        String    
+  nama_proses         String?   
+  keterangan          String?   
+  id_page             String?   
+  status              String?   
+  status_data         String?   
+  start_date          DateTime? 
+  end_date            DateTime? 
+  created_date        DateTime? @default(now()) 
+  created_by          String?   
+  updated_date        DateTime? @default(now()) 
+  updated_by          String?   
+}
+
+model knex_migrations {
+  id             Int       @id @default(autoincrement()) 
+  name           String?   
+  batch          Int?
+  migration_time DateTime? 
+}
+
+model knex_migrations_lock {
+  index     Int  @id @default(autoincrement()) 
+  is_locked Int?
+}
+
+model navigation_items {
+  id                     Int                @id @default(autoincrement())
+  title                  String             
+  path                   String?            
+  icon                   String?            
+  header                 String?            
+  description            String?            
+  parent_id              Int?
+  meta                   String?
+  order                  Int?               @default(0)
+  roles                  String
+  is_active              Boolean?           @default(true)
+  created_at             DateTime?          @default(now()) 
+  updated_at             DateTime?          @default(now()) 
+  navigation_items       navigation_items?  @relation("navigation_itemsTonavigation_items", fields: [parent_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  other_navigation_items navigation_items[] @relation("navigation_itemsTonavigation_items")
+
+  @@index([is_active])
+  @@index([order])
+  @@index([parent_id])
+}
+
+model users {
+  id            Int         @id @default(autoincrement()) 
+  email         String      @unique 
+  password      String      
+  full_name     String      
+  is_active     Boolean?    @default(true)
+  last_login_at DateTime?   
+  created_at    DateTime    @default(now()) 
+  updated_at    DateTime    @default(now()) 
+  role          String? @default("asnaf")
+
+  @@index([email])
+  @@index([is_active])
+  @@index([role])
+}
+
+model k_asnaf_documents {
+  id_asnaf_document Int               @id @default(autoincrement())
+  asnaf_uuid        String
+  original_name     String
+  filename          String
+  file_path         String
+  file_size         Int
+  mime_type         String
+  document_type     String?
+  description       String?
+  status            Int?              @default(1)
+  created_date      DateTime?         @default(now())
+  updated_date      DateTime?         @default(now())
+  k_asnaf_profiling k_asnaf_profiling @relation(fields: [asnaf_uuid], references: [asnaf_uuid], onDelete: Cascade)
+
+  @@index([asnaf_uuid])
+  @@index([document_type])
+  @@index([status])
+}

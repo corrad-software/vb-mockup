@@ -1,0 +1,801 @@
+<script setup>
+definePageMeta({
+  title: "Profil Asnaf Lengkap",
+  middleware: ["auth"],
+  requiresAuth: true,
+  breadcrumb: [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Profiling", path: "/profiling" },
+    { name: "Pendaftaran Lengkap", path: "/mockup-asnaf-profiling" },
+  ],
+})
+
+const activeTab = ref('applicant')
+const isSaving = ref(false)
+const showSuccess = ref(false)
+
+const applicantData = ref({
+  // Maklumat Peribadi
+  jenisId: 'Kad Pengenalan', noId: '', nama: '', noPolice: '', noPassport: '',
+  tarikhMulaPassport: '', tarikhTamatPassport: '', noPassportLama: '', tarafPendudukTetap: '',
+  tarikhLahir: '', agama: 'Islam',
+  emel: '', noTelefon: '', warganegara: 'Warganegara', jantina: 'Lelaki', bangsa: 'Melayu',
+  bersekolah: 'Ya', pendidikanTertinggi: 'Peringkat Rendah',
+  // Maklumat Islam
+  namaSelepasIslam: '', tarikhMasukIslam: '', tarikhMasukKFAM: '',
+  // Status Perkahwinan
+  statusPerkahwinan: 'Berkahwin', statusPoligami: 'Tidak',
+  // Maklumat Bank
+  namaBank: '', noAkaunBank: '', namaPemegangAkaun: '', kaedahPembayaran: '',
+  // Kesihatan
+  tahapKesihatan: 'Sihat',
+  // Kemahiran
+  kemahiran: 'Nelayan',
+  // Kediaman - Alamat
+  alamat1: '', alamat2: '', alamat3: '', lokasi: '', negeri: 'Selangor', daerah: '',
+  poskod: '', kariah: '', tempohBermastautin: 0, kursusTerpilih: '',
+  // Kediaman - Status
+  statusKediaman: 'Milik Sendiri Tidak Berbayar', tapakRumah: 'Milik Sendiri',
+  jenisRumah: 'Kos Rendah', binaanRumah: 'Batu', keadaanKediaman: 'Baik/Sempurna',
+  // Kediaman - Kemudahan
+  bekalanAir: 'Ada', bilAir: 0, bekalanElektrik: 'Ada', bilElektrik: 0,
+  bilPenyelenggaraan: 'Ada', bilPenyelenggaraanAmount: 0,
+  // Pinjaman
+  institusiPinjaman: '', jenisPinjaman: '', bayaranBulanan: 0, jumlahPinjaman: 0,
+  tarikhMulaPinjaman: '', tarikhTamatPinjaman: '',
+  // Pemilikan Aset
+  wangSimpanan: 0, emas: 0, saham: 0, kenderaan: '', rumahKedai: 0, tanah: 0,
+  // Waris
+  namaWaris: '', hubunganWaris: '', noTelefonWaris: '', alamatWaris: '',
+  // Pengesahan
+  dibantuPenolongAmil: 'Tidak', hubunganDenganPAK: 'Tidak',
+  hubunganKekeluargaanLZS: 'Tidak', pengesahanPDPA: 'Setuju',
+  // Pengesahan Bermastautin
+  namaPegawaiPAK: '', jawatanPAK: '', noTelefonPAK: '', tarikhPengesahan: '',
+})
+
+const tanggunganList = ref([])
+const jumlahTanggungan = ref(0)
+const showAddTanggunganModal = ref(false)
+const newTanggungan = ref({ nama: '', tarikhLahir: '' })
+const editingTanggunganId = ref(null)
+const isFormReadOnly = ref(false)
+
+// Collapsible sections state
+const collapsedSections = ref({
+  maklumatPeribadi: true,
+  kesihatan: true,
+  kemahiran: true,
+  kediaman: true,
+  pinjaman: true,
+  pemilikanAset: true,
+  waris: true,
+  pengesahan: true,
+  pengesahanBermastautin: true,
+})
+
+const toggleSection = (section) => {
+  collapsedSections.value[section] = !collapsedSections.value[section]
+}
+
+// Computed property for conditional field display (Foreign ID + Lain-lain)
+const showForeignIdFields = computed(() =>
+  applicantData.value.jenisId === 'Foreign ID' && applicantData.value.warganegara === 'Lain-lain'
+)
+
+function openAddTanggunganModal() {
+  newTanggungan.value = { nama: '', tarikhLahir: '' }
+  showAddTanggunganModal.value = true
+}
+
+function saveNewTanggungan() {
+  if (!newTanggungan.value.nama || !newTanggungan.value.tarikhLahir) {
+    return
+  }
+
+  const umur = calculateAge(newTanggungan.value.tarikhLahir)
+
+  tanggunganList.value.push({
+    id: Date.now(),
+    // Maklumat Peribadi
+    hubungan: 'Anak', nama: newTanggungan.value.nama, jenisId: 'Kad Pengenalan', noId: '', noPassport: '',
+    tarikhMulaPassport: '', tarikhTamatPassport: '', noPassportLama: '', tarafPendudukTetap: '',
+    jantina: 'Lelaki', tarikhLahir: newTanggungan.value.tarikhLahir,
+    tempatLahir: '', bangsa: 'Melayu', statusPerkahwinan: 'Bujang', warganegara: 'Warganegara',
+    tempohMenetapSelangor: 0, noTelefon: '', umur,
+    // Maklumat Islam
+    namaSelepasIslam: '', tarikhMasukIslam: '', tarikhMasukKFAM: '',
+    // Maklumat Bank
+    namaBank: '', noAkaunBank: '', namaPemegangAkaun: '', kaedahPembayaran: '',
+    // Pendidikan
+    bersekolah: 'Ya', pendidikanTertinggi: '',
+    // Kesihatan
+    tahapKesihatan: 'Sihat',
+    // Kemahiran (18+)
+    kemahiran: 'Nelayan',
+    // Pekerjaan (18+)
+    statusPekerjaan: 'Tidak Bekerja', namaMajikan: '', jawatan: '', pendapatanBulanan: 0,
+  })
+
+  // Auto-sort: youngest at bottom (oldest first)
+  tanggunganList.value.sort((a, b) => b.umur - a.umur)
+
+  showAddTanggunganModal.value = false
+  newTanggungan.value = { nama: '', tarikhLahir: '' }
+}
+
+function editTanggungan(id) {
+  editingTanggunganId.value = editingTanggunganId.value === id ? null : id
+}
+
+function removeTanggungan(id) {
+  tanggunganList.value = tanggunganList.value.filter(t => t.id !== id)
+  jumlahTanggungan.value = tanggunganList.value.length
+}
+
+function calculateAge(birthDate) {
+  if (!birthDate) return 0
+  const today = new Date()
+  const birth = new Date(birthDate)
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  return age
+}
+
+async function handleSave() {
+  // Simpan = save as draft (can edit multiple times)
+  isSaving.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('Data saved as draft:', { applicantData: applicantData.value, tanggunganList: tanggunganList.value })
+    showSuccess.value = true
+    setTimeout(() => showSuccess.value = false, 3000)
+  } catch (error) {
+    console.error('Save failed:', error)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+async function handleSubmit() {
+  // Hantar = submit (record becomes read-only)
+  isSaving.value = true
+  try {
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    console.log('Data submitted:', { applicantData: applicantData.value, tanggunganList: tanggunganList.value })
+    isFormReadOnly.value = true
+    // Navigate to Had Kifayah (Analisa Data) page after successful submission
+    navigateTo('/mockup-asnaf-profiling/had-kifayah')
+  } catch (error) {
+    console.error('Submit failed:', error)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+watch(() => tanggunganList.value.length, (newVal) => jumlahTanggungan.value = newVal)
+watch(() => tanggunganList.value, (newVal) => {
+  newVal.forEach(t => { if (t.tarikhLahir) t.umur = calculateAge(t.tarikhLahir) })
+}, { deep: true })
+
+const tanggunganBelow18 = computed(() => tanggunganList.value.filter(t => t.umur < 18))
+</script>
+
+<template>
+  <div class="page-container">
+    <LayoutsBreadcrumb />
+
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Borang Pendaftaran Lengkap Asnaf</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Isi semua maklumat dengan lengkap dan tepat</p>
+      </div>
+      <rs-badge variant="info">DRAF</rs-badge>
+    </div>
+
+    <div v-if="showSuccess" class="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+      <div class="flex items-center gap-2">
+        <Icon name="mdi:check-circle" class="w-5 h-5 text-green-600" />
+        <p class="text-sm text-green-700 dark:text-green-300">Data berjaya disimpan!</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-12 gap-6">
+      <div class="col-span-12 lg:col-span-8">
+        <div class="mb-6">
+          <div class="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+            <button @click="activeTab = 'applicant'" :class="['px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap', activeTab === 'applicant' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200']">
+              <Icon name="mdi:account" class="w-4 h-4 inline-block mr-2" />Maklumat Pemohon
+            </button>
+            <button @click="activeTab = 'tanggungan'" :class="['px-4 py-2.5 text-sm font-medium transition-colors border-b-2 whitespace-nowrap', activeTab === 'tanggungan' ? 'border-primary text-primary bg-primary/5' : 'border-transparent text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200']">
+              <Icon name="mdi:account-multiple" class="w-4 h-4 inline-block mr-2" />Tanggungan ({{ jumlahTanggungan }})
+            </button>
+          </div>
+        </div>
+
+        <div v-show="activeTab === 'applicant'" class="space-y-6">
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('maklumatPeribadi')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">A. Maklumat Peribadi Asnaf</h3>
+                <Icon :name="collapsedSections.maklumatPeribadi ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.maklumatPeribadi">
+              <div class="space-y-6">
+                <div>
+                  <h4 class="text-base font-semibold mb-4">I. Maklumat Peribadi</h4>
+                  <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Jenis ID" v-model="applicantData.jenisId" :options="['Kad Pengenalan', 'Foreign ID', 'Sijil Lahir']" :disabled="isFormReadOnly" />
+                      <FormKit type="text" label="Nombor ID" v-model="applicantData.noId" validation="required" :disabled="isFormReadOnly" />
+                    </div>
+                    <FormKit type="text" label="Nama Penuh" v-model="applicantData.nama" validation="required" :disabled="isFormReadOnly" />
+                    <!-- Conditional: Only show for Foreign ID + Lain-lain -->
+                    <template v-if="showForeignIdFields">
+                      <FormKit type="text" label="No Passport Lama" v-model="applicantData.noPassportLama" :disabled="isFormReadOnly" />
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormKit type="date" label="Tarikh Mula Passport" v-model="applicantData.tarikhMulaPassport" :disabled="isFormReadOnly" />
+                        <FormKit type="date" label="Tarikh Tamat Passport" v-model="applicantData.tarikhTamatPassport" :disabled="isFormReadOnly" />
+                      </div>
+                      <FormKit type="select" label="Taraf Penduduk Tetap" v-model="applicantData.tarafPendudukTetap" :options="['Ya', 'Tidak']" :disabled="isFormReadOnly" />
+                    </template>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="text-base font-semibold mb-4">Butiran Peribadi</h4>
+                  <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormKit type="date" label="Tarikh Lahir" v-model="applicantData.tarikhLahir" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Agama" v-model="applicantData.agama" :options="['Islam', 'Kristian', 'Buddha', 'Hindu', 'Sikh', 'Taoisme', 'Konfusianisme', 'Lain-lain']" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Jantina" v-model="applicantData.jantina" :options="['Lelaki', 'Perempuan']" :disabled="isFormReadOnly" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="email" label="Emel" v-model="applicantData.emel" validation="required|email" :disabled="isFormReadOnly" />
+                      <FormKit type="tel" label="No Telefon" v-model="applicantData.noTelefon" :disabled="isFormReadOnly" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Warganegara" v-model="applicantData.warganegara" :options="['Warganegara', 'Lain-lain']" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Bangsa" v-model="applicantData.bangsa" :options="['Melayu', 'Cina', 'India', 'Lain-lain']" :disabled="isFormReadOnly" />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="text-base font-semibold mb-4">Maklumat Pendidikan</h4>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Bersekolah" v-model="applicantData.bersekolah" :options="['Ya', 'Tidak']" :disabled="isFormReadOnly" />
+                    <FormKit type="select" label="Pendidikan Tertinggi" v-model="applicantData.pendidikanTertinggi" :options="['Peringkat Rendah', 'SRP/PMR', 'SPM', 'Sijil', 'Diploma', 'STPM', 'Ijazah', 'Lain-lain Nyatakan']" :disabled="isFormReadOnly" />
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-4">Maklumat Islam (*untuk muallaf)</h4>
+                  <div class="space-y-4">
+                    <FormKit type="text" label="Nama Selepas Islam (Muallaf)" v-model="applicantData.namaSelepasIslam" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="date" label="Tarikh Masuk Islam" v-model="applicantData.tarikhMasukIslam" :disabled="isFormReadOnly" />
+                      <FormKit type="date" label="Tarikh Masuk Kelas Fardu Ain Muallaf (KFAM)" v-model="applicantData.tarikhMasukKFAM" :disabled="isFormReadOnly" />
+                    </div>
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-4">Status Perkahwinan</h4>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormKit type="select" label="Status Perkahwinan" v-model="applicantData.statusPerkahwinan" :options="['Berkahwin', 'Bujang', 'Janda', 'Ibu Tinggal', 'Bapa Tinggal', 'Duda', 'Balu']" :disabled="isFormReadOnly" />
+                    <FormKit type="select" label="Status Poligami" v-model="applicantData.statusPoligami" :options="['Tidak', 'Ya']" :disabled="isFormReadOnly" />
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-4">Maklumat Bank</h4>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Nama Bank" v-model="applicantData.namaBank" :options="['Maybank', 'CIMB', 'RHB', 'Bank Islam', 'Bank Rakyat', 'Public Bank', 'Hong Leong Bank', 'Ambank', 'BSN', 'Affin Bank', 'UOB', 'OCBC', 'Standard Chartered', 'Alliance Bank', 'Agrobank']" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="text" label="No Akaun Bank" v-model="applicantData.noAkaunBank" :disabled="isFormReadOnly" />
+                      <FormKit type="text" label="Nama Pemegang Akaun Bank" v-model="applicantData.namaPemegangAkaun" :disabled="isFormReadOnly" />
+                    </div>
+                    <FormKit type="select" label="Kaedah Pembayaran" v-model="applicantData.kaedahPembayaran" :options="['Akaun', 'Tiada']" :disabled="isFormReadOnly" />
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('kesihatan')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">B. Maklumat Kesihatan</h3>
+                <Icon :name="collapsedSections.kesihatan ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.kesihatan">
+              <FormKit type="select" label="Tahap Kesihatan" v-model="applicantData.tahapKesihatan" :options="['Sihat', 'Sakit Kronik', 'OKU', 'Uzur']" :disabled="isFormReadOnly" />
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('kemahiran')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">C. Maklumat Kemahiran</h3>
+                <Icon :name="collapsedSections.kemahiran ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.kemahiran">
+              <FormKit type="checkbox" label="Kemahiran yang Dimiliki" v-model="applicantData.kemahiran" :options="['Nelayan', 'Penternakan', 'Pertanian', 'Menjahit', 'Kraftangan', 'Memasak', 'Mengasuh', 'Perkhidmatan', 'Pertukangan', 'Perniagaan', 'Lain-lain']" :disabled="isFormReadOnly" />
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('kediaman')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">D. Maklumat Kediaman/Tempat Tinggal</h3>
+                <Icon :name="collapsedSections.kediaman ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.kediaman">
+              <div class="space-y-6">
+                <div>
+                  <h4 class="text-base font-semibold mb-4">Alamat Terkini</h4>
+                  <div class="space-y-4">
+                    <FormKit type="textarea" label="Alamat 1" v-model="applicantData.alamat1" rows="2" validation="required" :disabled="isFormReadOnly" />
+                    <FormKit type="textarea" label="Alamat 2" v-model="applicantData.alamat2" rows="2" :disabled="isFormReadOnly" />
+                    <FormKit type="textarea" label="Alamat 3" v-model="applicantData.alamat3" rows="2" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="text" label="Lokasi" v-model="applicantData.lokasi" validation="required" help="Klik 'Dapatkan Lokasi' untuk auto-fill" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Daerah" v-model="applicantData.daerah" validation="required" :options="['Gombak', 'Hulu Langat', 'Hulu Selangor', 'Klang', 'Kuala Langat', 'Kuala Selangor', 'Petaling', 'Sabak Bernam', 'Sepang']" :disabled="isFormReadOnly" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="text" label="Poskod" v-model="applicantData.poskod" validation="required" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Kariah" v-model="applicantData.kariah" :options="['Kariah Masjid Al-Hidayah', 'Kariah Masjid Al-Ikhlas', 'Kariah Masjid Al-Muttaqin', 'Kariah Masjid Al-Rahman', 'Kariah Masjid Al-Salam', 'Kariah Masjid Al-Taqwa', 'Kariah Masjid An-Nur', 'Kariah Masjid Ar-Rahman', 'Kariah Masjid As-Salam', 'Kariah Masjid At-Taqwa']" :disabled="isFormReadOnly" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="number" label="Tempoh Bermastautin (Tahun)" v-model="applicantData.tempohBermastautin" validation="required" :disabled="isFormReadOnly" />
+                      <FormKit type="text" label="Kursus Terpilih" v-model="applicantData.kursusTerpilih" disabled />
+                    </div>
+                    <FormKit type="text" label="Negeri" v-model="applicantData.negeri" disabled value="Selangor" />
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-4">Status Kediaman/Tempat Tinggal</h4>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Status Kediaman/Tempat Tinggal" v-model="applicantData.statusKediaman" :options="['Milik Sendiri Tidak Berbayar', 'Milik Sendiri Berbayar', 'Sewa', 'Kuarters Majikan', 'Tumpang Rumah Ibu/Bapa/Mertua', 'Pusaka', 'Sumbangan LZS/PPRT/RUSDA', 'Lain-lain']" :disabled="isFormReadOnly" />
+                    <FormKit type="select" label="Tapak Rumah" v-model="applicantData.tapakRumah" :options="['Milik Sendiri', 'Tanah Wakaf', 'Tanah Kerajaan/Persendirian', 'Setinggan (Izin)', 'Kebenaran Menduduki Sementara (TOL)', 'Menumpang/Sewa/Pajak Daripada Orang Lain', 'Tanah Keluarga', 'Lain-lain']" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Jenis Rumah" v-model="applicantData.jenisRumah" :options="['Kos Rendah', 'Kos Sederhana', 'Pangsapuri/Flat', 'Teres', 'Lain-lain']" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Binaan Rumah" v-model="applicantData.binaanRumah" :options="['Batu', 'Kayu', 'Separa Batu', 'Lain-lain']" :disabled="isFormReadOnly" />
+                    </div>
+                    <FormKit type="select" label="Keadaan Kediaman" v-model="applicantData.keadaanKediaman" :options="['Baik/Sempurna', 'Uzur', 'Separa Uzur']" :disabled="isFormReadOnly" />
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-4">Kemudahan Asas</h4>
+                  <div class="space-y-4">
+                    <div>
+                      <FormKit type="select" label="Kemudahan Asas Bekalan Air" v-model="applicantData.bekalanAir" :options="['Ada', 'Tiada']" :disabled="isFormReadOnly" />
+                      <FormKit v-if="applicantData.bekalanAir === 'Ada'" type="number" label="Anggaran Bil Sebulan (RM)" v-model="applicantData.bilAir" class="mt-2" :disabled="isFormReadOnly" />
+                    </div>
+                    <div>
+                      <FormKit type="select" label="Bekalan Elektrik" v-model="applicantData.bekalanElektrik" :options="['Ada', 'Tiada']" :disabled="isFormReadOnly" />
+                      <FormKit v-if="applicantData.bekalanElektrik === 'Ada'" type="number" label="Anggaran Bil Sebulan (RM)" v-model="applicantData.bilElektrik" class="mt-2" :disabled="isFormReadOnly" />
+                    </div>
+                    <div>
+                      <FormKit type="select" label="Bil Penyelenggaraan" v-model="applicantData.bilPenyelenggaraan" :options="['Ada', 'Tiada']" :disabled="isFormReadOnly" />
+                      <FormKit v-if="applicantData.bilPenyelenggaraan === 'Ada'" type="number" label="Anggaran Bil Sebulan (RM)" v-model="applicantData.bilPenyelenggaraanAmount" class="mt-2" :disabled="isFormReadOnly" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('pinjaman')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">E. Maklumat Pinjaman Harta</h3>
+                <Icon :name="collapsedSections.pinjaman ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.pinjaman">
+              <div class="space-y-4">
+                <FormKit type="text" label="Nama Institusi / Individu Pemberi Pinjaman" v-model="applicantData.institusiPinjaman" :disabled="isFormReadOnly" />
+                <FormKit type="text" label="Jenis Pinjaman" v-model="applicantData.jenisPinjaman" :disabled="isFormReadOnly" />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormKit type="number" label="Amaun Bayaran Bulanan (RM)" v-model="applicantData.bayaranBulanan" :disabled="isFormReadOnly" prefix-icon="currency-usd" />
+                  <FormKit type="number" label="Jumlah Keseluruhan Pinjaman (RM)" v-model="applicantData.jumlahPinjaman" :disabled="isFormReadOnly" prefix-icon="currency-usd" />
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormKit type="date" label="Tahun Mula Pinjaman" v-model="applicantData.tarikhMulaPinjaman" :disabled="isFormReadOnly" />
+                  <FormKit type="date" label="Tahun Akhir Pinjaman" v-model="applicantData.tarikhTamatPinjaman" :disabled="isFormReadOnly" />
+                </div>
+                <FormKit type="file" label="Dokumen Perjanjian Pinjaman" help="Format: PDF, JPG, PNG. Max: 5MB" accept=".pdf,.jpg,.png" />
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('pemilikanAset')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">F. Pemilikan Aset</h3>
+                <Icon :name="collapsedSections.pemilikanAset ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.pemilikanAset">
+              <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="space-y-4">
+                    <h4 class="text-base font-semibold">Aset Cair</h4>
+                    <FormKit type="number" label="Jumlah wang simpanan (RM)" v-model="applicantData.wangSimpanan" prefix-icon="currency-usd" />
+                    <FormKit type="number" label="Emas (gram)" v-model="applicantData.emas" />
+                    <FormKit type="number" label="Saham (RM)" v-model="applicantData.saham" prefix-icon="currency-usd" />
+                  </div>
+                  <div class="space-y-4">
+                    <h4 class="text-base font-semibold">Aset Tidak Cair</h4>
+                    <FormKit type="checkbox" label="Jenis Kenderaan" v-model="applicantData.kenderaan" :options="['Basikal', 'Kereta', 'Motosikal', 'Van', 'Lori']" />
+                    <FormKit type="number" label="Rumah Kedai (unit)" v-model="applicantData.rumahKedai" />
+                    <FormKit type="number" label="Tanah/Sawah (ekar)" v-model="applicantData.tanah" />
+                  </div>
+                </div>
+                <FormKit type="file" label="Upload dokumen pemilikan" help="Wajib jika ada wang simpanan > 0, rumah kedai > 0, atau tanah/sawah > 0" accept=".pdf,.jpg,.png" />
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('waris')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">G. Maklumat Waris/Penjaga</h3>
+                <Icon :name="collapsedSections.waris ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.waris">
+              <div class="space-y-4">
+                <FormKit type="text" label="Nama Waris/Penjaga" v-model="applicantData.namaWaris" :disabled="isFormReadOnly" />
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormKit type="select" label="Hubungan dengan Pemohon" v-model="applicantData.hubunganWaris" :disabled="isFormReadOnly" :options="['Ibu', 'Bapa', 'Anak', 'Adik-beradik', 'Lain-lain']" />
+                  <FormKit type="tel" label="No Telefon Waris" v-model="applicantData.noTelefonWaris" :disabled="isFormReadOnly" />
+                </div>
+                <FormKit type="textarea" label="Alamat Waris" v-model="applicantData.alamatWaris" :disabled="isFormReadOnly" rows="2" />
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('pengesahan')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">H. Pengesahan</h3>
+                <Icon :name="collapsedSections.pengesahan ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.pengesahan">
+              <div class="space-y-6">
+                <div>
+                  <h4 class="text-base font-semibold mb-3">Bantuan Penolong Amil</h4>
+                  <FormKit type="radio" label="Adakah anda dibantu oleh penolong Amil" v-model="applicantData.dibantuPenolongAmil" :disabled="isFormReadOnly" :options="[{label: 'Ya', value: 'Ya'}, {label: 'Tidak', value: 'Tidak'}]" />
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-3">Hubungan dengan PAK</h4>
+                  <FormKit type="radio" label="Adakah anda mempunyai hubungan dengan Penolong Amil Kariah (PAK)?" v-model="applicantData.hubunganDenganPAK" :disabled="isFormReadOnly" :options="[{label: 'Ya', value: 'Ya'}, {label: 'Tidak', value: 'Tidak'}]" />
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-3">Maklumat Perakuan Pemohon</h4>
+                  <FormKit type="radio" label="Hubungan kekeluargaan dengan kakitangan LZS?" v-model="applicantData.hubunganKekeluargaanLZS" :disabled="isFormReadOnly" :options="[{label: 'Ya', value: 'Ya'}, {label: 'Tidak', value: 'Tidak'}]" />
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h4 class="text-base font-semibold mb-3">Pengesahan PDPA (Akta Perlindungan Data Peribadi)</h4>
+                  <FormKit type="radio" v-model="applicantData.pengesahanPDPA" :disabled="isFormReadOnly" :options="[{label: 'Setuju', value: 'Setuju'}, {label: 'Tidak Setuju', value: 'Tidak Setuju'}]" />
+                  <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm space-y-2">
+                    <p class="font-semibold">Saya mengesahkan bahawa:</p>
+                    <ul class="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                      <li>Semua maklumat yang diberikan adalah benar dan tepat</li>
+                      <li>Saya memberikan kebenaran kepada Lembaga Zakat Selangor (LZS) untuk memproses dan menyimpan data peribadi saya</li>
+                      <li>Saya memahami bahawa data saya akan digunakan untuk tujuan pemprosesan permohonan bantuan</li>
+                      <li>Saya bersetuju untuk menerima komunikasi berkaitan permohonan saya</li>
+                      <li>Saya boleh menarik balik kebenaran ini pada bila-bila masa</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header>
+              <button @click="toggleSection('pengesahanBermastautin')" class="w-full flex items-center justify-between text-left">
+                <h3 class="text-lg font-semibold">I. Pengesahan Bermastautin</h3>
+                <Icon :name="collapsedSections.pengesahanBermastautin ? 'mdi:chevron-down' : 'mdi:chevron-up'" class="w-5 h-5" />
+              </button>
+            </template>
+            <template #body v-if="!collapsedSections.pengesahanBermastautin">
+              <div class="space-y-6">
+                <div>
+                  <h4 class="text-base font-semibold mb-4">Maklumat Pegawai PAK yang Mengesahkan</h4>
+                  <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="text" label="Nama Pegawai PAK" v-model="applicantData.namaPegawaiPAK" disabled />
+                      <FormKit type="text" label="Jawatan" v-model="applicantData.jawatanPAK" disabled value="Pegawai PAK" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="tel" label="No Telefon" v-model="applicantData.noTelefonPAK" disabled />
+                      <FormKit type="date" label="Tarikh Pengesahan" v-model="applicantData.tarikhPengesahan" disabled />
+                    </div>
+                    <FormKit type="file" label="Muat naik dokumen pengesahan bermastautin" help="Format yang dibenarkan: PDF, JPG, PNG. Saiz maksimum: 5MB" accept=".pdf,.jpg,.png" />
+                  </div>
+                </div>
+                <div class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div class="flex gap-3">
+                    <Icon name="mdi:information" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div class="text-sm text-blue-700 dark:text-blue-300">
+                      <p class="font-semibold mb-1">Nota</p>
+                      <p>Maklumat Pegawai PAK akan diisi automatik berdasarkan kariah yang dipilih. Sila muat naik dokumen pengesahan bermastautin yang telah disahkan oleh pegawai PAK.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+        </div>
+
+        <div v-show="activeTab === 'tanggungan'" class="space-y-6">
+          <rs-card>
+            <template #body>
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg font-semibold">Senarai Tanggungan</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Tambah maklumat tanggungan yang sah</p>
+                </div>
+                <rs-button variant="primary" @click="openAddTanggunganModal" :disabled="isFormReadOnly">
+                  <Icon name="mdi:plus" class="w-4 h-4 mr-2" />Tambah Tanggungan
+                </rs-button>
+              </div>
+            </template>
+          </rs-card>
+
+          <div v-if="tanggunganList.length === 0" class="text-center py-12">
+            <Icon name="mdi:account-multiple-outline" class="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p class="text-gray-600 dark:text-gray-400">Tiada tanggungan ditambah</p>
+            <p class="text-sm text-gray-500 mt-1">Klik butang "Tambah Tanggungan" untuk mula</p>
+          </div>
+
+          <rs-card v-for="(t, index) in tanggunganList" :key="t.id">
+            <template #header>
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                  <button @click="editTanggungan(t.id)" class="text-left">
+                    <h4 class="text-lg font-semibold hover:text-primary">Tanggungan {{ index + 1 }}: {{ t.nama }}</h4>
+                  </button>
+                  <rs-badge v-if="t.umur < 18" variant="info">Bawah 18 tahun</rs-badge>
+                  <rs-badge v-else variant="success">18 tahun ke atas</rs-badge>
+                </div>
+                <button v-if="!isFormReadOnly" @click="removeTanggungan(t.id)" class="text-red-600 hover:text-red-700 dark:text-red-400">
+                  <Icon name="mdi:delete" class="w-5 h-5" />
+                </button>
+              </div>
+            </template>
+            <template #body v-if="editingTanggunganId === t.id">
+              <div class="space-y-6">
+                <div>
+                  <h5 class="text-base font-semibold mb-4">I. Maklumat Peribadi Tanggungan</h5>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Hubungan dengan Pemohon/Asnaf" v-model="t.hubungan" validation="required" :options="['Pasangan Pemohon', 'Isteri Kedua', 'Isteri Ketiga', 'Isteri Keempat', 'Ipar', 'Abang', 'Bapa', 'Ibu', 'Kakak', 'Adik', 'Anak', 'Cucu', 'Bapa Mertua', 'Ibu Mertua', 'Lain-lain Nyatakan']" :disabled="isFormReadOnly" />
+                    <FormKit type="text" label="Nama" v-model="t.nama" validation="required" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Jenis ID" v-model="t.jenisId" :options="['Kad Pengenalan', 'Foreign ID', 'Sijil Lahir']" :disabled="isFormReadOnly" />
+                      <FormKit type="text" label="No ID" v-model="t.noId" :disabled="isFormReadOnly" />
+                    </div>
+                    <!-- Conditional: Only show for Foreign ID + Lain-lain -->
+                    <template v-if="t.jenisId === 'Foreign ID' && t.warganegara === 'Lain-lain'">
+                      <FormKit type="text" label="No Passport Lama" v-model="t.noPassportLama" :disabled="isFormReadOnly" />
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormKit type="date" label="Tarikh Mula Passport" v-model="t.tarikhMulaPassport" :disabled="isFormReadOnly" />
+                        <FormKit type="date" label="Tarikh Tamat Passport" v-model="t.tarikhTamatPassport" :disabled="isFormReadOnly" />
+                      </div>
+                      <FormKit type="select" label="Taraf Penduduk Tetap" v-model="t.tarafPendudukTetap" :options="['Ya', 'Tidak']" :disabled="isFormReadOnly" />
+                    </template>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <FormKit type="select" label="Jantina" v-model="t.jantina" :options="['Lelaki', 'Perempuan']" :disabled="isFormReadOnly" />
+                      <FormKit type="date" label="Tarikh Lahir" v-model="t.tarikhLahir" validation="required" :disabled="isFormReadOnly" />
+                      <FormKit type="number" label="Umur" v-model="t.umur" :disabled="true" />
+                    </div>
+                    <FormKit type="text" label="Tempat Lahir" v-model="t.tempatLahir" validation="required" :disabled="isFormReadOnly" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Bangsa" v-model="t.bangsa" :options="['Melayu', 'Cina', 'India', 'Lain-lain Nyatakan']" :disabled="isFormReadOnly" />
+                      <FormKit type="select" label="Status Perkahwinan" v-model="t.statusPerkahwinan" :options="['Berkahwin', 'Bujang', 'Janda', 'Ibu Tinggal', 'Bapa Tinggal', 'Duda', 'Balu']" :disabled="isFormReadOnly" />
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="select" label="Warganegara" v-model="t.warganegara" :options="['Warganegara', 'Lain-lain']" :disabled="isFormReadOnly" />
+                      <FormKit type="number" label="Tempoh Menetap Di Selangor (Tahun)" v-model="t.tempohMenetapSelangor" :disabled="isFormReadOnly" />
+                    </div>
+                    <FormKit type="tel" label="No Telefon/Telefon Bimbit" v-model="t.noTelefon" :disabled="isFormReadOnly" />
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 class="text-base font-semibold mb-4">Maklumat Islam</h5>
+                  <div class="space-y-4">
+                    <FormKit type="text" label="Nama Selepas Islam (Muallaf)" v-model="t.namaSelepasIslam" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="date" label="Tarikh Masuk Islam" v-model="t.tarikhMasukIslam" help="Format: dd-mm-yyyy" />
+                      <FormKit type="date" label="Tarikh Masuk Kelas Fardu Ain Muallaf (KFAM)" v-model="t.tarikhMasukKFAM" help="Format: dd-mm-yyyy" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 class="text-base font-semibold mb-4">Maklumat Bank</h5>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Nama Bank" v-model="t.namaBank" :options="['Maybank', 'CIMB', 'RHB', 'Bank Islam', 'Bank Rakyat', 'Public Bank', 'Hong Leong Bank', 'Ambank', 'BSN', 'Affin Bank', 'UOB', 'OCBC', 'Standard Chartered', 'Alliance Bank', 'Agrobank']" />
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormKit type="text" label="No Akaun Bank" v-model="t.noAkaunBank" validation="required" />
+                      <FormKit type="text" label="Nama Pemegang Akaun Bank" v-model="t.namaPemegangAkaun" validation="required" />
+                    </div>
+                    <FormKit type="select" label="Kaedah Pembayaran" v-model="t.kaedahPembayaran" :options="['Akaun', 'Tiada']" />
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 class="text-base font-semibold mb-3">Maklumat Pendidikan</h5>
+                  <div class="space-y-4">
+                    <FormKit type="select" label="Bersekolah" v-model="t.bersekolah" :options="['Ya', 'Tidak']" />
+                    <FormKit v-if="t.bersekolah === 'Ya'" type="select" label="Pendidikan Tertinggi" v-model="t.pendidikanTertinggi" :options="['Peringkat Rendah', 'SRP/PMR', 'SPM', 'Sijil', 'Diploma', 'STPM', 'Ijazah', 'Lain-lain Nyatakan']" />
+                  </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                  <h5 class="text-base font-semibold mb-3">Maklumat Kesihatan</h5>
+                  <FormKit type="select" label="Tahap Kesihatan" v-model="t.tahapKesihatan" :options="['Sihat', 'Sakit Kronik', 'OKU', 'Uzur']" />
+                </div>
+
+                <template v-if="t.umur >= 18">
+                  <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h5 class="text-base font-semibold mb-3">Kemahiran</h5>
+                    <FormKit type="select" label="Kemahiran" v-model="t.kemahiran" :options="['Nelayan', 'Penternakan', 'Pertanian', 'Menjahit', 'Kraftangan', 'Memasak', 'Mengasuh', 'Perkhidmatan', 'Pertukangan', 'Perniagaan', 'Lain-lain']" />
+                  </div>
+
+                  <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                    <h5 class="text-base font-semibold mb-4">Maklumat Pekerjaan</h5>
+                    <div class="space-y-4">
+                      <FormKit type="select" label="Status Pekerjaan" v-model="t.statusPekerjaan" :options="['Bekerja', 'Tidak Bekerja', 'Pelajar', 'Pencen']" />
+                      <template v-if="t.statusPekerjaan === 'Bekerja'">
+                        <FormKit type="text" label="Nama Majikan" v-model="t.namaMajikan" />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormKit type="text" label="Jawatan" v-model="t.jawatan" />
+                          <FormKit type="number" label="Pendapatan Bulanan (RM)" v-model="t.pendapatanBulanan" />
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </template>
+
+                <div v-else class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                  <div class="flex gap-3">
+                    <Icon name="mdi:information" class="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div class="text-sm text-yellow-700 dark:text-yellow-300">
+                      <p class="font-semibold mb-1">Tanggungan Bawah 18 Tahun</p>
+                      <p>Maklumat kemahiran dan pekerjaan tidak diperlukan untuk tanggungan bawah 18 tahun.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+        </div>
+      </div>
+
+      <div class="col-span-12 lg:col-span-4">
+        <div class="space-y-4 lg:sticky lg:top-6">
+          <rs-card>
+            <template #header><h4 class="text-lg font-semibold">Ringkasan Profil</h4></template>
+            <template #body>
+              <div class="space-y-3">
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Status</p>
+                  <rs-badge variant="warning">DRAF</rs-badge>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Nama</p>
+                  <p class="text-sm font-semibold">{{ applicantData.nama || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">No. ID</p>
+                  <p class="text-sm font-semibold">{{ applicantData.noId || '-' }}</p>
+                </div>
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Jumlah Tanggungan</p>
+                  <p class="text-sm font-semibold">{{ jumlahTanggungan }} orang</p>
+                </div>
+                <div v-if="tanggunganBelow18.length > 0">
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Tanggungan Bawah 18 Tahun</p>
+                  <p class="text-sm font-semibold">{{ tanggunganBelow18.length }} orang</p>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-3 mt-3">
+                  <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Ringkasan Merit</p>
+                  <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <p class="text-xs text-blue-700 dark:text-blue-300">Akan dikira selepas submit</p>
+                  </div>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-3">
+                  <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">Status Multidimensi</p>
+                  <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    <p class="text-xs text-blue-700 dark:text-blue-300">Akan dikira selepas submit</p>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #header><h4 class="text-lg font-semibold">Kemajuan</h4></template>
+            <template #body>
+              <div class="space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">Maklumat Peribadi</span>
+                  <Icon name="mdi:check-circle" class="w-4 h-4 text-green-600" />
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                  <span class="text-gray-600 dark:text-gray-400">Tanggungan</span>
+                  <Icon :name="jumlahTanggungan > 0 ? 'mdi:check-circle' : 'mdi:circle-outline'" :class="jumlahTanggungan > 0 ? 'w-4 h-4 text-green-600' : 'w-4 h-4 text-gray-400'" />
+                </div>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #body>
+              <div class="space-y-3">
+                <rs-button variant="primary" class="w-full" :loading="isSaving" @click="handleSave">
+                  <Icon name="mdi:content-save" class="w-4 h-4 mr-2" />Simpan
+                </rs-button>
+                <rs-button variant="success" class="w-full" @click="handleSubmit">
+                  <Icon name="mdi:send" class="w-4 h-4 mr-2" />Hantar
+                </rs-button>
+                <rs-button variant="secondary" class="w-full" @click="() => navigateTo('/profiling')">
+                  <Icon name="mdi:arrow-left" class="w-4 h-4 mr-2" />Kembali
+                </rs-button>
+              </div>
+            </template>
+          </rs-card>
+
+          <rs-card>
+            <template #body>
+              <div class="flex gap-3">
+                <Icon name="mdi:information" class="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div class="text-sm text-gray-600 dark:text-gray-400">
+                  <p class="font-semibold mb-1">Maklumat Tanggungan</p>
+                  <p>Seksyen tambahan untuk tanggungan bawah 18 tahun akan tersembunyi secara automatik.</p>
+                </div>
+              </div>
+            </template>
+          </rs-card>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal for Adding Tanggungan -->
+    <div v-if="showAddTanggunganModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="showAddTanggunganModal = false">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Tambah Tanggungan</h3>
+            <button @click="showAddTanggunganModal = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+              <Icon name="mdi:close" class="w-6 h-6" />
+            </button>
+          </div>
+          <div class="space-y-4">
+            <FormKit type="text" label="Nama" v-model="newTanggungan.nama" validation="required" />
+            <FormKit type="date" label="Tarikh Lahir" v-model="newTanggungan.tarikhLahir" validation="required" />
+          </div>
+          <div class="flex gap-3 mt-6">
+            <rs-button variant="secondary" class="flex-1" @click="showAddTanggunganModal = false">Batal</rs-button>
+            <rs-button variant="primary" class="flex-1" @click="saveNewTanggungan" :disabled="!newTanggungan.nama || !newTanggungan.tarikhLahir">Simpan</rs-button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.page-container { padding: 1.5rem; }
+@media (max-width: 768px) { .page-container { padding: 1rem; } }
+</style>
