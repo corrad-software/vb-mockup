@@ -91,3 +91,4 @@ This project follows a comprehensive design system documented in [.claude/CLAUDE
 
 **Built for rapid prototyping with Nuxt 3, TailwindCSS, and modern web technologies.**
 # vb-mockup
+# vb-mockup
